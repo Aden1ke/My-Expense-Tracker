@@ -10,21 +10,19 @@
 <body>
   <header>
 	  <h1>My Expense Tracker</h1>
-	  <h3>Welcome! Let's manage your finances better.</h3>
-	  <!--<p>My Expense Tracker is a web application designed to help you manage your personal finances effectively. With our intuitive design, you can easily input your expenses manually or upload files such as receipts and bank statements. The app categorizes your monthly spending and provides a comprehensive summary of your expenses, helping you stay organized and achieve your financial goals.</p>-->
+	  <h3>Welcome {{ user }}! Let's manage your finances better.</h3>
+	  <h3>Your monthly allowance is {{ allowance }}</h3> <!-- Displaying the allowance -->
 	  <p>Manage your expenses and monthly allowance efficiently.</p>
+	  <a href="{{ url_for('logout') }}">Logout</a> <!-- Logout link -->
   </header>
   <main>
     <!-- Main content of the page -->
     <!-- User Input Section -->
     <section id="user-input">
 	    <h2> Enter Your Details</h2>
-	    <form id="userForm">
-		    <label for:"name">Name:</label>
-		    <input type:"text" id="name" name:"name" placeholder:"Enter Your Name" required>
-
+	    <form id="userForm" action="{{url_for('submit_allowance')}}" method="POST" >
 		    <label for:"allowance">Monthly Allowance:</label>
-		    <input type:"number" id="allowance" name:"allowance" placeholder:"Enter Your Monthly Allowance" required>
+		    <input type="number" id="allowance" name="allowance" placeholder="Enter Your Monthly Allowance" required>
 		    <button type="submit">submit</button>
 	    </form>
     </section>
@@ -33,12 +31,12 @@
     <!-- Expense Input Section -->
     <section id="expenses">
 	    <h2>Track your expenses</h2>
-	    <p>Would you like to input your expenses manually kr upload a file</p>
+	    <p>Would you like to input your expenses manually or upload a file</p>
 	    <form id="expenseForm">
                 <input type="radio" id="manual" name="inputType" value="manual" checked>
                 <label for="manual">Manual Input</label>
                 <input type="radio" id="file" name="inputType" value="file">
-                <label for="file">Upload File</label>
+                <label for="uploadfile">Upload File</label>
 
 		<!-- Manual Input Fields -->
                 <div id="manualInput">

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A simple and universal HTML skeleton">
+  <title>My Expense Tracker</title>
+  <link rel="stylesheet" href="styles.css"> <!-- Link to your CSS file -->
+</head>
+<body>
+  <header>
+	  <h1>My Expense Tracker</h1>
+	  <h3>Welcome! Let's manage your finances better.</h3>
+	  <p>Manage your expenses and monthly allowance efficiently.</p>
+  </header>
+  <main>
+    <!-- Main content of the page -->
+    <!-- User login Section -->
+    <section id="loginPage">
+	    <h2>Login</h2>
+	    <form class="login-form" action="/login" method="POST">
+		    <label for:"username">Username:</label>
+		    <input type="text" id="username" name="username" placeholder="Enter Your Username" required>
+
+		    <label for:"password">Password:</label>
+		    <input type="password" id="password" name="password" placeholder="Enter Your Password" required>
+		    <button type="submit">Signin</button>
+	    </form>
+    </section>
+
+    <!-- User registration Section -->
+    <section id="signUp">
+	    <h2>Signup</h2>
+	    <form class="Signup-form" action="/index" method="POST">
+		    <label for:"username">Username:</label>
+		    <input type:"text" id="username" name:"username" placeholder="Enter Your Username" required>
+
+		    <label for:"email">Email:</label>
+		    <input type:"email" id="email" name:"email" placeholder="Enter Your Email" required>
+
+		    <label for:"password">Password:</label>
+		    <input type:"password" id="password" name:"password" placeholder="Enter Your Password" required>
+
+		    <label for:"confirm-password">Confirm Password:</label>
+		    <input type:"confirm-password" id="confirm-password" name:"confirm-password" placeholder="Confirm Your Password" required>
+
+		    <button type="submit">Signup</button>
+	    </form>
+    </section>
+</body>
+</html>
