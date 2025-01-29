@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="A simple and universal HTML skeleton">
-  <title>login</title>
+  <title>Signup</title>
   <link rel="stylesheet" href="styles.css"> <!-- Link to your CSS file -->
 </head>
 <body>
@@ -13,17 +13,23 @@
 	  <h3>Welcome! Let's manage your finances better.</h3>
 	  <p>Manage your expenses and monthly allowance efficiently.</p>
   </header>
-  <main>
-    <!-- User login Section -->
-	    <h2>Login</h2>
-	    <form class="login-form" action="/login" method="POST">
-		    <label for:"username">Username:</label>
+    <!-- User registration Section -->
+	    <h2>Signup</h2>
+	    <form class="Signup-form" action="/signup" method="POST">
+		    <label for="username">Username:</label>
 		    <input type="text" id="username" name="username" placeholder="Enter Your Username" required>
 
-		    <label for:"password">Password:</label>
+		    <label for="email">Email:</label>
+		    <input type="email" id="email" name="email" placeholder="Enter Your Email" required>
+
+		    <label for="password">Password:</label>
 		    <input type="password" id="password" name="password" placeholder="Enter Your Password" required>
-		    <button type="submit">Signin</button>
-		    <a href="{{ url_for('signup') }}">Don't have an account? Signup</a> <!-- signup link -->
+
+		    <label for="confirm_password">Confirm Password:</label>
+		    <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm Your Password" required>
+
+		    <button type="submit">Signup</button>
+		    <a href="{{ url_for('login') }}">Already have an account? Login</a> <!-- Logout link -->
 	    </form>
 </body>
 </html>
