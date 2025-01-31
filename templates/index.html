@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="A simple and universal HTML skeleton">
   <title>My Expense Tracker</title>
-  <link rel="stylesheet" href="styles.css"> <!-- Link to your CSS file -->
+  <!-- Link to your CSS file -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body>
   <header>
@@ -36,18 +37,15 @@
                 <input type="radio" id="manual" name="inputType" value="manual" checked>
                 <label for="manual">Manual Input</label>
                 <input type="radio" id="file" name="inputType" value="file">
-                <label for="uploadfile">Upload File</label>
+                <label for="file">Upload File</label>
 
 		<!-- Manual Input Fields -->
-                <div id="manualInput">
+                <div id="manualInput" class="hide_div">
                     <label for="date">Date:</label>
                     <input type="date" id="date" name="date" required>
                     
-                    <label for="description">Description:</label>
-                    <input type="text" id="description" name="description" placeholder="e.g., Groceries" required>
-                    
-                    <label for="amount">Amount:</label>
-                    <input type="number" id="amount" name="amount" placeholder="Enter amount" required>
+                    <label for="amount" class="hide_div" id="amountLabel">Amount:</label>
+                    <input type="number" class="hide_div" id="amount" name="amount" placeholder="Enter amount" required>
 
 		    <label for="category">Category:</label>
 		    <select id="category" name="category" required>
@@ -56,10 +54,15 @@
 			    <option value="entertainment">Entertainment</option>
                         <option value="others">Others</option>
 		    </select>
+
+		    <!-- Other Description Field -->
+		    <label for="otherdescription" id="otherDescriptionLabel" class="hide_div">Other Description:</label>
+		    <input type="text" class="hide_div" id="otherdescription" name="otherdescription" placeholder="Please specify e.g., Groceries" required>
 		</div>
 
+
 		<!-- File Upload Section -->
-		<div id="fileInput">
+		<div id="fileInput" class="hide_div">
 			<label for="fileUpload">Upload File:</label>
 			<input type="file" id="fileUpload" name="fileUpload" accept=".csv,.xls,.xlsx,.pdf">
                     <p>Accepted formats: CSV, Excel, PDF</p>
@@ -80,6 +83,7 @@
     <p>&copy; 2025 My Expense Tracker. All rights reserved.</p>
   </footer>
 
-  <script src="script.js"></script> <!-- Link to your JavaScript file -->
+  <!-- Link to your JavaScript file -->
+  <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 </body>
 </html>
