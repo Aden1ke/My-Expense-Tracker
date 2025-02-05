@@ -33,7 +33,6 @@
     <section id="expenses">
 	    <h2>Track your expenses</h2>
 	    <p>Would you like to input your expenses manually or upload a file</p>
-	    <form id="expenseForm">
                 <input type="radio" id="manual" name="inputType" value="manual" checked>
                 <label for="manual">Manual Input</label>
                 <input type="radio" id="file" name="inputType" value="file">
@@ -41,11 +40,12 @@
 
 		<!-- Manual Input Fields -->
                 <div id="manualInput" class="hide_div">
+		<form id="expenseForm" action="{{url_for('add_expense')}}" method="POST">
                     <label for="date">Date:</label>
                     <input type="date" id="date" name="date" required>
                     
-                    <label for="amount" class="hide_div" id="amountLabel">Amount:</label>
-                    <input type="number" class="hide_div" id="amount" name="amount" placeholder="Enter amount" required>
+                    <label for="amount">Amount:</label>
+                    <input type="number" id="amount" name="amount" placeholder="Enter amount" required>
 
 		    <label for="category">Category:</label>
 		    <select id="category" name="category" required>
@@ -54,10 +54,12 @@
 			    <option value="entertainment">Entertainment</option>
                         <option value="others">Others</option>
 		    </select>
-
-		    <!-- Other Description Field -->
 		    <label for="otherdescription" id="otherDescriptionLabel" class="hide_div">Other Description:</label>
-		    <input type="text" class="hide_div" id="otherdescription" name="otherdescription" placeholder="Please specify e.g., Groceries" required>
+		    <input type="text" class="hide_div" id="otherdescription" name="otherdescription" placeholder="Please specify e.g., Groceries">
+
+		    <input type="hidden" id="newCategoryHidden" name="newCategory">
+		    <button type="submit">Add Expense</button>
+		</form>
 		</div>
 
 
@@ -67,14 +69,17 @@
 			<input type="file" id="fileUpload" name="fileUpload" accept=".csv,.xls,.xlsx,.pdf">
                     <p>Accepted formats: CSV, Excel, PDF</p>
 		</div>
-		<button type="submit">Add Expense</button>
-	    </form>
     </section>
 
     <!-- Summary Section -->
     <section id="summary">
 	    <h2>Summary</h2>
 	    <p>Your parsed data and insights will be displayed here.</p>
+	    <!-- Debugging: Print session values -->
+<h3>Debugging:</h3>
+<p>Date: {{ session.get('date', 'Not Set') }}</p>
+<p>Expense Category: {{ session.get('expense_category', 'Not Set') }}</p>
+<p>Amount: {{ session.get('amount', 'Not Set') }}</p>
     </section>
   </main>
   

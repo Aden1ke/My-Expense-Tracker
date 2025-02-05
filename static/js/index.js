@@ -5,7 +5,9 @@ document.addEventListener("DOMContentLoaded", function(){
 	const fileInputDev = document.getElementById("fileInput");
 	const categorySelect = document.getElementById("category");
 	const otherDescriptionLabel = document.getElementById("otherDescriptionLabel");
-	const otherDescription = document.getElementById("otherdescription"); // Corrected
+	const otherDescription = document.getElementById("otherdescription");
+	const newCategoryHidden = document.getElementById("newCategoryHidden");
+            const expenseForm = document.getElementById("expenseForm");
 
 	function toggleInput(){
 		if(manualRadio.checked) {
@@ -28,6 +30,7 @@ document.addEventListener("DOMContentLoaded", function(){
 		} else {
 			otherDescriptionLabel.classList.add("hide_div"); // Hide label
 			otherDescription.classList.add("hide_div"); // Hide input
+			newCategoryHidden.value = "";
 		}
 	}
 
@@ -35,26 +38,38 @@ document.addEventListener("DOMContentLoaded", function(){
 	changeCategories();
 
 
-	// Function to show/hide 'Amount' field
-	function addAmountToCategories() {
-		let categoryFound = false;
-		for (let i = 0; i < categorySelect.options.length; i++) {
-			if (categorySelect.value === categorySelect.options[i].value) {
-				categoryFound = true;
-				break;
+	// function to add to category selection
+	function addCategory() {
+		if(categorySelect.value === "others") {
+			const newCategory = otherDescription.value.trim();
+			if (newCategory !== "") {
+				const option = document.createElement("option");
+				option.value = newCategory.toLowerCase();
+				option.textContent = newCategory;
+				categorySelect.appendChild(option);
+				categorySelect.value = newCategory.toLowerCase();
+				newCategoryHidden.value = newCategory;
+				otherDescription.value = "";
 			}
-		}
-		if (categoryFound) {
-			amountLabel.classList.remove("hide_div");
-			amount.classList.remove("hide_div");
-		} else {
-			amountLabel.classList.add("hide_div");
-			amount.classList.add("hide_div");
 		}
 	}
 
-	categorySelect.addEventListener("change", addAmountToCategories);
-	addAmountToCategories();
+	// Trigger adding the category when the user presses "Enter" or leaves the input field
+	otherDescription.addEventListener("keypress", function(event) {
+		if (event.key === "Enter") {
+			event.preventDefault(); // Prevent form submission
+			addCategory();
+		}
+	});
+	otherDescription.addEventListener("blur", addCategory);
+
+	// Ensure new category is saved before form submission
+	expenseForm.addEventListener("submit", function () {
+		if (categorySelect.value === "others") {
+			newCategoryHidden.value = otherDescription.value.trim();
+		}
+	});
+
 
 });
 

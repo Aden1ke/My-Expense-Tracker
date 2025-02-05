@@ -18,13 +18,19 @@ login_manager.login_view = "login"
 
 @login_manager.user_loader
 def user_loader(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
+
+Class UserExpense(db.Model, UserMixin):
+    id = db.column(db.Integer, primary_key=True)
+    expense_category = db.Column(db.String(20), nullable=False)
+    date = db.Column(db.Integer, nullable=False)
+
 
 @app.route('/index')
 @login_required
@@ -33,7 +39,10 @@ def index():
         username = session["user"]
         user = User.query.filter_by(username=username).first()
         allowance = session.get("allowance", "Not Set")
-        return render_template('index.html', user=user.username, allowance=allowance)
+        amount = session.get("amount", "Not Set")
+        date = session.get("date", "Not Set")
+        expense_category = session.get("expense_category", "Not Set")
+        return render_template('index.html', user=user.username, allowance=allowance, amount=amount, date=date, expense_category=expense_category)
     return redirect(url_for("login"))
 
 
@@ -93,6 +102,29 @@ def submit_allowance():
             session["allowance"] = allowance
             return redirect(url_for("index"))
     return "Allowance not submitted!", 400
+
+@app.route("/add_expense", methods=["POST", "GET"])
+def add_expense():
+    if request.method == "POST":
+        date = request.form.get('date')
+        expense_category = request.form.get('category')
+        amount = request.form.get('amount')
+        # Use new category if it was added
+        if expense_category == "others" and new_category:
+            expense_category = new_category
+
+        print(f"Received data - Date: {date}, Category: {expense_category}, Amount: {amount}")
+
+        if date and expense_category and amount:
+            session["date"] = date
+            session["expense_category"] = expense_category
+            session["amount"] = amount
+            print(f"Session updated - Date: {session['date']}, Category: {session['expense_category']}, Amount: {session['amount']}")
+            return redirect(url_for("index"))
+        
+        return "Expense category not submitted!", 400
+    return "Invalid Request Method!", 400
+
 
 @app.route('/logout')
 @login_required
