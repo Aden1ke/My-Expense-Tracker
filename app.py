@@ -26,11 +26,17 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
 
-Class UserExpense(db.Model, UserMixin):
-    id = db.column(db.Integer, primary_key=True)
+class UserExpense(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
     expense_category = db.Column(db.String(20), nullable=False)
-    date = db.Column(db.Integer, nullable=False)
+    date = db.Column(db.String(20), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
 
+class SubmitAllowance(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
+    allowance = db.Column(db.Float, nullable=False)
 
 @app.route('/index')
 @login_required
@@ -99,7 +105,13 @@ def submit_allowance():
     if request.method== "POST":
         allowance = request.form.get('allowance')
         if allowance:
-            session["allowance"] = allowance
+            user = User.query.filter_by(username=session["user"]).first()
+            allowance_entry = SubmitAllowance(user_id=user.id, allowance=allowance)
+            db.session.add(allowance_entry)
+            db.session.commit()
+            session["allowance"] = {
+                    "allowance": allowance_entry.allowance
+                    }
             return redirect(url_for("index"))
     return "Allowance not submitted!", 400
 
@@ -109,20 +121,25 @@ def add_expense():
         date = request.form.get('date')
         expense_category = request.form.get('category')
         amount = request.form.get('amount')
+        new_category = request.form.get('newCategory')  # Retrieve new category
+
         # Use new category if it was added
         if expense_category == "others" and new_category:
             expense_category = new_category
 
-        print(f"Received data - Date: {date}, Category: {expense_category}, Amount: {amount}")
-
         if date and expense_category and amount:
-            session["date"] = date
-            session["expense_category"] = expense_category
-            session["amount"] = amount
-            print(f"Session updated - Date: {session['date']}, Category: {session['expense_category']}, Amount: {session['amount']}")
+            user = User.query.filter_by(username=session["user"]).first()
+            expense_entry = UserExpense(user_id=user.id, date=date, expense_category=expense_category, amount=amount)
+            db.session.add(expense_entry)
+            db.session.commit()
+            session["expense_entry"] = {
+                    "amount": expense_entry.amount,
+                    "date": expense_entry.date,
+                    "expense_category": expense_entry.expense_category
+                    }
             return redirect(url_for("index"))
-        
-        return "Expense category not submitted!", 400
+        else:
+            return "Expense category not submitted!", 400
     return "Invalid Request Method!", 400
 
 
