@@ -13,8 +13,8 @@ Expense Tracker is a web application designed to help users manage their persona
 ## Technologies Used
 
 - **Frontend:** HTML5, CSS3, JavaScript
-- **Backend:** Python (e.g., Django)
-- **Database:** MongoDB or MySQL
+- **Backend:** Python (Flask)
+- **Database:** MySQL
 - **File Parsing:** Libraries for handling Excel, CSV, and PDF files (e.g., pandas, PyPDF2)
 
 ## Installation
