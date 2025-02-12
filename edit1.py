@@ -1,29 +1,25 @@
 from flask import Flask, render_template, request, url_for, redirect, session
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin, login_user, login_required,LoginManager,  logout_user
+from flask_login import UserMixin, login_user, login_required,LoginManager,  logout_user, current_user
 from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
-from validate import validate_password
 from random import randint
-from dotenv import load_dotenv
+from validate import validate_password
 import os
 
-
 app = Flask(__name__)
-app.secret_key = "chinchill"
+app.secret_key = "My Chinchilla"
 bcrypt = Bcrypt(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 db = SQLAlchemy(app)
-load_dotenv()
-
 
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Use your SMTP server
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER') #'sarahogunlalu6@gmail.com'
-app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS') #'wsrt otkt vswx lmmp'
-app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']#'sarahogunlalu6@gmail.com' #app.config['MAIL_USERNAME']
+app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER')
+app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS')
+app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
 mail = Mail(app)
 
 otp = randint(100000, 999999)
@@ -40,10 +36,8 @@ def user_loader(user_id):
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
+    email = db.Column(db.String(150), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
-    email = db.Column(db.String(120), nullable=False, unique=True)
-    allowance = db.Column(db.Float, nullable=False, default=0)
-    expenses = db.relationship('UserExpense', backref='user', lazy=True)
 
 class UserExpense(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -51,6 +45,11 @@ class UserExpense(db.Model, UserMixin):
     expense_category = db.Column(db.String(20), nullable=False)
     date = db.Column(db.String(20), nullable=False)
     amount = db.Column(db.Float, nullable=False)
+
+class SubmitAllowance(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
+    allowance = db.Column(db.Float, nullable=False)
 
 @app.route('/index')
 @login_required
@@ -96,28 +95,15 @@ def signup():
         email = request.form.get("email")
         password = request.form.get("password")
         confirm_password = request.form.get("confirm_password")
-        allowance = 0
-        # Debugging prints
-        print(f"Received email: {email}")  # Ensure email is captured
-        print(f"Received username: {user}")
-
-        if not email:
-            return "Email is required!", 400
-        if not user:
-            return "Username is required!", 400
-        # Check if email exists
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            return "Email already exists.", 400
 
         validate_result, status_code = validate_password(password, email, confirm_password)
         if status_code != 200:
             return (validate_result, status_code)
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        new_user = User(username=user, password=hashed_password, email=email,)
+        new_user = User(username=user, email=email, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
-        session["new_user"]= new_user.username
+        #session["new_user"]= new_user.username
         session["email"] = email
         if new_user:
             return redirect(url_for("verifyEmail"))
@@ -127,29 +113,44 @@ def signup():
         if "new_user" in session:
             return redirect(url_for("index"))
         return render_template('signup.html')
-
 @app.route('/verifyEmail', methods=["POST", "GET"])
 def verifyEmail():
+    print(f"Received {request.method} request")  # Log the received method
     #email = request.form.get("email")
     email = session.get("email")
     if not email:
-        return "Email is required!", 400  # Return error if email is missing
-    msg = Message('OTP Verification', sender=app.config['MAIL_USERNAME'], recipients=[email])
+        return "Email is required!", 400
+        # If email is not in session, redirect back to signup
+        #return redirect(url_for("signup"))
+    # Automatically send OTP on GET requests
+    #if request.method == "GET":
+    #msg = Message('OTP Verification', sender=app.config['MAIL_DEFAULT_SENDER'], recipients=[email])
+    msg = Message('OTP Verification', recipients=[email])
     msg.body = str(otp)
     try:
         mail.send(msg)
         return render_template("verifyEmail.html")
     except Exception as e:
         return f"Error sending email: {str(e)}", 500
+    #return render_template("verifyEmail.html", otp_sent=True)
+    #elif request.method == "POST":
+     #   msg = Message('OTP Verification', recipients=[email])
+      #  msg.body = str(otp)
+       # try:
+        #    mail.send(msg)
+        #except Exception as e:
+         #   return f"Error sending email: {str(e)}", 500
+        # Render the page with a flag that OTP was sent (if needed)
+        #return render_template("verifyEmail.html", otp_sent=True)
+    #return render_template("verifyEmail.html")
 
 @app.route('/validateEmail', methods=["POST"])
 def validateEmail():
     user_otp = request.form.get('otp')
     if otp == int(user_otp):
-        return redirect(url_for("index"))
+        return "<h3>'Email verification successful'</h3>"
     else:
         return "<h3>'Failure, OTP does not match'</h3>"
-
 
 @app.route('/submit_allowance', methods=["POST", "GET"])
 def submit_allowance():
@@ -157,9 +158,12 @@ def submit_allowance():
         allowance = request.form.get('allowance')
         if allowance:
             user = User.query.filter_by(username=session["user"]).first()
-            user.allowance = float(allowance)
+            allowance_entry = SubmitAllowance(user_id=user.id, allowance=allowance)
+            db.session.add(allowance_entry)
             db.session.commit()
-            session["allowance"] = user.allowance
+            session["allowance"] = {
+                    "allowance": allowance_entry.allowance
+                    }
             return redirect(url_for("index"))
     return "Allowance not submitted!", 400
 
@@ -195,7 +199,7 @@ def add_expense():
 @login_required
 def logout():
     logout_user()
-    session.clear()
+    session.pop("user", None)
     return redirect(url_for("login"))
 
 

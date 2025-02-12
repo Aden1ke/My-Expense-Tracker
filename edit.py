@@ -5,25 +5,23 @@ from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
 from validate import validate_password
 from random import randint
-from dotenv import load_dotenv
 import os
 
 
 app = Flask(__name__)
-app.secret_key = "chinchill"
+app.secret_key = "username"
 bcrypt = Bcrypt(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 db = SQLAlchemy(app)
-load_dotenv()
 
 
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Use your SMTP server
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER') #'sarahogunlalu6@gmail.com'
-app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS') #'wsrt otkt vswx lmmp'
-app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']#'sarahogunlalu6@gmail.com' #app.config['MAIL_USERNAME']
+app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER')
+app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS')
+app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
 mail = Mail(app)
 
 otp = randint(100000, 999999)
@@ -41,7 +39,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
-    email = db.Column(db.String(120), nullable=False, unique=True)
+    email = db.Column(db.String(150), nullable=False, unique=True)
     allowance = db.Column(db.Float, nullable=False, default=0)
     expenses = db.relationship('UserExpense', backref='user', lazy=True)
 
@@ -91,54 +89,56 @@ def login():
 
 @app.route('/signup', methods=['POST', 'GET'])
 def signup():
+    print(f"Received {request.method} request")  # Log the received method
     if request.method== "POST":
         user = request.form.get("username")
         email = request.form.get("email")
         password = request.form.get("password")
         confirm_password = request.form.get("confirm_password")
         allowance = 0
-        # Debugging prints
-        print(f"Received email: {email}")  # Ensure email is captured
-        print(f"Received username: {user}")
 
-        if not email:
-            return "Email is required!", 400
-        if not user:
-            return "Username is required!", 400
-        # Check if email exists
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            return "Email already exists.", 400
-
+        # Validate password and confirm password match
         validate_result, status_code = validate_password(password, email, confirm_password)
         if status_code != 200:
             return (validate_result, status_code)
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        new_user = User(username=user, password=hashed_password, email=email,)
-        db.session.add(new_user)
-        db.session.commit()
-        session["new_user"]= new_user.username
-        session["email"] = email
-        if new_user:
-            return redirect(url_for("verifyEmail"))
-        else:
+
+        # Check if username is provided
+        if not user:
             return "Username is required!", 400
+        # Check if the email already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return "Email already exists.", 400  # Return an error message
+        # Hash the password
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        # Create a new user instance
+        new_user = User(username=user, password=hashed_password, email=email)
+        # Add the new user to the session and commit
+        db.session.add(new_user)
+        try:
+            db.session.commit()
+            session["new_user"]= new_user.username
+            return redirect(url_for("verifyEmail"))
+        except IntegrityError:
+            db.session.rollback()
+            return "An error occurred. Please try again.", 500
     else:
         if "new_user" in session:
             return redirect(url_for("index"))
-        return render_template('signup.html')
+        else:
+            return render_template('signup.html')
 
 @app.route('/verifyEmail', methods=["POST", "GET"])
 def verifyEmail():
-    #email = request.form.get("email")
-    email = session.get("email")
+    print(f"Received {request.method} request")  # Log the received method
+    email = request.form.get("email")
     if not email:
         return "Email is required!", 400  # Return error if email is missing
-    msg = Message('OTP Verification', sender=app.config['MAIL_USERNAME'], recipients=[email])
+    msg = Message('OTP Verification', recipients=[email])
     msg.body = str(otp)
     try:
         mail.send(msg)
-        return render_template("verifyEmail.html")
+        return redirect(url_for("verifyEmail.html"))
     except Exception as e:
         return f"Error sending email: {str(e)}", 500
 
@@ -146,7 +146,7 @@ def verifyEmail():
 def validateEmail():
     user_otp = request.form.get('otp')
     if otp == int(user_otp):
-        return redirect(url_for("index"))
+        return "<h3>'Email verification successful'</h3>"
     else:
         return "<h3>'Failure, OTP does not match'</h3>"
 

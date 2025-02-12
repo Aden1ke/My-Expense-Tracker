@@ -15,7 +15,7 @@
   </header>
     <!-- User registration Section -->
 	    <h2>Signup</h2>
-	    <form class="Signup-form" action="/signup" method="POST">
+	    <form class="Signup-form" action="{{ url_for('signup') }}" method="POST">
 		    <label for="username">Username:</label>
 		    <input type="text" id="username" name="username" placeholder="Enter Your Username" required>
 
