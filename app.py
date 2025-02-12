@@ -21,9 +21,9 @@ load_dotenv()
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Use your SMTP server
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER') #'sarahogunlalu6@gmail.com'
-app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS') #'wsrt otkt vswx lmmp'
-app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']#'sarahogunlalu6@gmail.com' #app.config['MAIL_USERNAME']
+app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER')
+app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS')
+app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
 mail = Mail(app)
 
 otp = randint(100000, 999999)
