@@ -6,7 +6,6 @@ from flask_mail import Mail, Message
 from validate import validate_password
 from random import randint
 from dotenv import load_dotenv
-from datetime import datetime, timedelta, timezone
 import os
 
 
@@ -27,15 +26,7 @@ app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS')
 app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
 mail = Mail(app)
 
-def generate_otp():
-    """Generate a new OTP and store it in session with a timestamp."""
-    new_otp = randint(100000, 999999)
-    session["otp"] = {
-            'value': new_otp,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-
-            }
-    return new_otp
+otp = randint(100000, 999999)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -143,11 +134,8 @@ def verifyEmail():
     email = session.get("email")
     if not email:
         return "Email is required!", 400  # Return error if email is missing
-    # Generate OTP with timestamp
-    new_otp = generate_otp()
     msg = Message('OTP Verification', sender=app.config['MAIL_USERNAME'], recipients=[email])
-    #msg.body = f"Your OTP is {new_otp}. It expires in 1 minutes."
-    msg.body = str(new_otp)
+    msg.body = str(otp)
     try:
         mail.send(msg)
         return render_template("verifyEmail.html")
@@ -157,45 +145,10 @@ def verifyEmail():
 @app.route('/validateEmail', methods=["POST"])
 def validateEmail():
     user_otp = request.form.get('otp')
-    if not user_otp:
-        return "<h3>Failure, OTP does not match</h3>"
-        #return "<h3>Failure, OTP is required</h3>"
-
-    stored_otp = session['otp']
-    otp_value = stored_otp['value']
-    otp_timestamp = datetime.fromisoformat(stored_otp['timestamp'])
-
-    # Check if OTP is expired (valid for 1 minutes)
-    otp_lifetime = timedelta(minutes=1)
-    if datetime.now(timezone.utc) - otp_timestamp > otp_lifetime:
-        new_otp = generate_otp()
-        return f"<h3>Failure, OTP has expired. A new OTP has been sent.</h3>"
-        #return "<h3>'Failure, OTP has expired'</h3>"
-
-    if otp_value == int(user_otp):
+    if otp == int(user_otp):
         return redirect(url_for("index"))
     else:
-        return "<h3>Failure, OTP does not match</h3>"
-        #return "<h3>Failure, OTP does not match</h3>"
-
-@app.route('/resend_otp', methods=["GET"])
-def resend_otp():
-    email = session.get("email")
-    if not email:
-        return "Email is required!", 400
-
-    new_otp = generate_otp()
-    msg = Message('New OTP Verification', sender=app.config['MAIL_USERNAME'], recipients=[email])
-    #msg.body = f"Your new OTP is {new_otp}. It expires in 1 minute."
-    msg.body = f"Your OTP is {new_otp}. It expires in 1 minute."
-
-
-    try:
-        mail.send(msg)
-        return "New OTP has been sent!", 200
-    except Exception as e:
-        return f"Error sending email: {str(e)}", 500
-
+        return "<h3>'Failure, OTP does not match'</h3>"
 
 
 @app.route('/submit_allowance', methods=["POST", "GET"])
