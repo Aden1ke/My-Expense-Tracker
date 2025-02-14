@@ -25,6 +25,9 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER')
 app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS')
 app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_TYPE'] = 'filesystem'  # Store sessions in a file instead of memory
+
 mail = Mail(app)
 
 def generate_otp():
@@ -93,9 +96,6 @@ def login():
             return redirect(url_for("index"))
 
         return "Username and password is required!", 400
-    else:
-        if "user" in session:
-            return redirect(url_for("index"))
     return render_template('login.html')
 
 @app.route('/signup', methods=['POST', 'GET'])
@@ -106,14 +106,10 @@ def signup():
         password = request.form.get("password")
         confirm_password = request.form.get("confirm_password")
         allowance = 0
-        # Debugging prints
-        print(f"Received email: {email}")  # Ensure email is captured
-        print(f"Received username: {user}")
 
-        if not email:
-            return "Email is required!", 400
-        if not user:
-            return "Username is required!", 400
+        if not email or not user or not password or not confirm_password:
+            return "All fields are required!", 400
+
         # Check if email exists
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
@@ -123,19 +119,20 @@ def signup():
         if status_code != 200:
             return (validate_result, status_code)
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        new_user = User(username=user, password=hashed_password, email=email,)
-        db.session.add(new_user)
-        db.session.commit()
-        session["new_user"]= new_user.username
+        # Store user details in session instead of saving to DB
+        session["new_user"]={
+                "username": user,
+                "email": email,
+                "password":hashed_password
+                }
+        #new_user = User(username=user, password=hashed_password, email=email,)
+        #db.session.add(new_user)
+        #db.session.commit()
+        #session["new_user"]= new_user.username
         session["email"] = email
-        if new_user:
-            return redirect(url_for("verifyEmail"))
-        else:
-            return "Username is required!", 400
-    else:
-        if "new_user" in session:
-            return redirect(url_for("index"))
-        return render_template('signup.html')
+        return redirect(url_for("verifyEmail"))
+
+    return render_template('signup.html')
 
 @app.route('/verifyEmail', methods=["POST", "GET"])
 def verifyEmail():
@@ -146,8 +143,7 @@ def verifyEmail():
     # Generate OTP with timestamp
     new_otp = generate_otp()
     msg = Message('OTP Verification', sender=app.config['MAIL_USERNAME'], recipients=[email])
-    #msg.body = f"Your OTP is {new_otp}. It expires in 1 minutes."
-    msg.body = str(new_otp)
+    msg.body = f"Your OTP is {new_otp}. It expires in 1 minutes."
     try:
         mail.send(msg)
         return render_template("verifyEmail.html")
@@ -159,7 +155,6 @@ def validateEmail():
     user_otp = request.form.get('otp')
     if not user_otp:
         return "<h3>Failure, OTP does not match</h3>"
-        #return "<h3>Failure, OTP is required</h3>"
 
     stored_otp = session['otp']
     otp_value = stored_otp['value']
@@ -170,13 +165,26 @@ def validateEmail():
     if datetime.now(timezone.utc) - otp_timestamp > otp_lifetime:
         new_otp = generate_otp()
         return f"<h3>Failure, OTP has expired. A new OTP has been sent.</h3>"
-        #return "<h3>'Failure, OTP has expired'</h3>"
 
     if otp_value == int(user_otp):
-        return redirect(url_for("index"))
+        # Retrieve user details from session and save to DB
+        new_user_data = session.get("new_user")
+        if new_user_data:
+            new_user = User(
+                    username=new_user_data["username"],
+                    password=new_user_data["password"],
+                    email=new_user_data["email"]
+                    )
+            db.session.add(new_user)
+            db.session.commit()
+
+            # Clear session after successful registration
+            session.pop("new_user", None)
+            session.pop("otp", None)
+            session["user"] = new_user.username  # Log the user in
+            return redirect(url_for("index"))
     else:
         return "<h3>Failure, OTP does not match</h3>"
-        #return "<h3>Failure, OTP does not match</h3>"
 
 @app.route('/resend_otp', methods=["GET"])
 def resend_otp():
@@ -186,7 +194,6 @@ def resend_otp():
 
     new_otp = generate_otp()
     msg = Message('New OTP Verification', sender=app.config['MAIL_USERNAME'], recipients=[email])
-    #msg.body = f"Your new OTP is {new_otp}. It expires in 1 minute."
     msg.body = f"Your OTP is {new_otp}. It expires in 1 minute."
 
 
