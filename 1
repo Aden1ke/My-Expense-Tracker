@@ -1,0 +1,11 @@
+def process_file(filepath, filename):
+    if filename.endswith(".csv"):
+        df = pd.read_csv(filepath)
+    elif filename.endswith(".xls") or filename.endswith(".xlsx"):
+        df = pd.read_excel(filepath)
+    elif filename.endswith(".pdf"):
+        df = extract_data_from_pdf(filepath)
+    else:
+        return "unsupported file format"
+    return df
+

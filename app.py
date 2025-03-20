@@ -4,9 +4,13 @@ from flask_login import UserMixin, login_user, login_required,LoginManager,  log
 from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
 from validate import validate_password
+from upload_file import process_file
 from random import randint
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
+from werkzeug.utils import secure_filename
+import pandas as pd
+import pyPDF2
 import os
 
 
@@ -18,6 +22,8 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 db = SQLAlchemy(app)
 
 
+UPLOAD_FOLDER = "upload"
+ALLOWED_EXTENSIONS = {"csv", "xls", "xlsx", "pdf"}
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Use your SMTP server
 app.config['MAIL_PORT'] = 587
@@ -27,7 +33,7 @@ app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS')
 app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_TYPE'] = 'filesystem'  # Store sessions in a file instead of memory
-
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 mail = Mail(app)
 
 def generate_otp():
@@ -125,10 +131,6 @@ def signup():
                 "email": email,
                 "password":hashed_password
                 }
-        #new_user = User(username=user, password=hashed_password, email=email,)
-        #db.session.add(new_user)
-        #db.session.commit()
-        #session["new_user"]= new_user.username
         session["email"] = email
         return redirect(url_for("verifyEmail"))
 
@@ -231,7 +233,12 @@ def add_expense():
 
         if date and expense_category and amount:
             user = User.query.filter_by(username=session["user"]).first()
-            expense_entry = UserExpense(user_id=user.id, date=date, expense_category=expense_category, amount=amount)
+            expense_entry = UserExpense(
+                    user_id=user.id,
+                    date=date,
+                    expense_category=expense_category,
+                    amount=amount
+                    )
             db.session.add(expense_entry)
             db.session.commit()
             session["expense_entry"] = {
@@ -244,6 +251,36 @@ def add_expense():
             return "Expense category not submitted!", 400
     return "Invalid Request Method!", 400
 
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/upload_file', methods=["POST", "GET"])
+def upload_file():
+    if request.method == "POST":
+        if "fileUpload" not in request.files:
+            return "no file part"
+        file = request.files["fileUpload"]
+        if file.filename == "":
+            return "No selected file"
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            file.save(filepath)
+            process_file(filepath, filename)
+            for _,row in df.iterrows(df):
+                expense = userExpense(
+                        user_id = row["user_id"],
+                        expense_category = row["expense_category"],
+                        date=row["date"],
+                        amount=row["amount"]
+                        )
+            db.session.add(expense)
+            db.session.commit()
+        return f"File '{filename}' uploaded successfully!"
+    return render_template("index.html")
 
 @app.route('/logout')
 @login_required
